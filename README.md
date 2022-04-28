@@ -1,6 +1,9 @@
 # ORIE-4740-Final-Project
+
 Jacob Gottesfeld (jbg272), Vaughn Campos (vac62), Fisher Bricker (gfb53)
+
 ORIE 4740 Project Proposal
+
 For our final project, our group has harvested data from the API of the popular online wine marketplace Vivino. Vivino has information on over 70,000 wines from around the world and users can rate and purchase them directly on the website. By iterating through Vivino, we created a dataset of 8500+ unique wines and 14 variables. These variables include: the price of the bottle, user rating, number of user ratings, type (red, white, rose, etc.), style (i.e. Californian Red Blend), year, body (on a scale of 1-4), acidity (on a scale of 1-4), if it is vintage, if it is natural, region, country, winery, and the bottle’s size in milliliters.
 
 Before analyzing our data we will clean it and remove any records with missing information. Additionally, in order to gain more intuition on our dataset, we plan to use unsupervised methods like clustering and/or PCA. Furthermore, we will create a bi-variable plot and a histogram of price and rating. These will give us information on the interaction between our predictors and the distribution of our data.
