@@ -1,3 +1,43 @@
+#All code refrenced from 'Demonstration of XGBoost'
+
+
+library(dplyr)
+library(glmnet)
+library(boot)
+library(leaps)
+library(Matrix)
+library(pls)
+par(mfrow=c(1,1))
+# Cleaning data and removing outliers
+df <- read.csv("WineData.csv")
+df <- na.omit(df)
+df <- subset(df, Acidity != -1 & Year > 1950 & Country != "Mexico" & Country != "Hungary" & Country != "Uruguay")
+df <- subset(df, select = -c(X, Id, Name, Winery,StyleName,Region))
+
+
+df$Type <- as.factor(df$Type)
+df$Vintage <- as.factor(df$Vintage)
+df$Nat <- as.factor(df$Nat)
+df$Country = as.factor(df$Country)
+df$Size <- as.factor(df$Size)
+
+
+df.Pricelm <- lm(Price ~ ., data=df)
+df.Ratinglm <- lm(Rating ~ ., data = df)
+
+dfPriceRes <- rstudent(df.Pricelm)
+dfRatingRes <- rstudent(df.Ratinglm)
+
+
+dfPrice.post <- df[abs(dfPriceRes) < 3,]
+dfRating.post <- df[abs(dfRatingRes) < 3,]
+
+wine.price <- na.omit(dfPrice.post)
+wine.rating <- na.omit(dfRating.post)
+
+wine.price$NumRatings <- log(wine.price$NumRatings)
+wine.price$Price <- log(wine.price$Price)
+
 data <- wine.price
 data <- data[,!names(data) %in% 'id']
 
@@ -35,23 +75,19 @@ data.x.scaled  <- scale( data[, !names(data) %in% 'Type'] ) # normalize training
 train.x.scaled <- data.x.scaled[train_ind, ]  # then split training and test sets
 test.x.scaled  <- data.x.scaled[-train_ind, ] # then split training and test sets
 
+
 ptm <- proc.time()
 set.seed(1)
 knn.pred <- knn(train.x.scaled, 
                 test.x.scaled, 
                 train.y, 
                 k=10)                # number of neighbors
-print(knn.time <- proc.time() - ptm) # running time: 2 min on my laptop
+print(knn.time <- proc.time() - ptm) 
 
-#table(knn.pred, test.y) # show confusion matrix
+table(knn.pred, test.y) # show confusion matrix
 print(knn.acc <- mean(knn.pred == test.y))      # classification accuracy on test set
-# I got accuracy 0.7676719
 
 require(gbm)
-# In the latest version of gbm, multi-class classification seems to have issues.
-# Running the code below gives the warning:
-# "Setting `distribution = "multinomial"` is ill-advised as it is currently broken. It exists only for backwards compatibility. Use at your own risk."
-
 ptm <- proc.time()
 set.seed(1)
 tree <- gbm(Type~., 
@@ -60,17 +96,15 @@ tree <- gbm(Type~.,
             n.trees=200,                  # number of trees
             interaction.depth=4,          # d = tree size
             shrinkage=0.05)               # shrinkage parameter
-print(tree.time <- proc.time() - ptm)     # running time: 4.5 min on my laptop
+print(tree.time <- proc.time() - ptm)   
 
 
 
 tree.prob <- predict(tree, newdata=test[,], n.tree=200, Type='response')
 tree.pred <- apply(tree.prob, 1, which.max)  # use the class with maximum probability as prediction
-#table(tree.pred, test.y) # show confusion matrix
+table(tree.pred, test.y) # show confusion matrix
 print(tree.acc <- mean(tree.pred == as.numeric(test.y))) # classification accuracy on test set
-# I got accuracy 0.7791622
 
-# Using n.tree=400 and shrinkage=0.05, I get 0.79 accuracy in 9 minutes
 
 
 ## --- XGBoost ---
@@ -97,9 +131,9 @@ xgbtree <- xgboost(param=param,
                    nrounds = nround,  # number of trees
                    max.depth = 4,     # tree depth (not the same as interaction.depth in gbm!)
                    eta = 0.3)           # shrinkage parameter
-print(xgbtree.time <- proc.time() - ptm)         # running time: 1 min on my laptop
+print(xgbtree.time <- proc.time() - ptm)        
 
-xgbtree.prob <- predict(xgbtree, testXMatrix)    # this is a long vector
+xgbtree.prob <- predict(xgbtree, testXMatrix)   
 xgbtree.prob <- t( matrix(xgbtree.prob, nrow=numberOfClasses, ncol=nrow(test.x)) ) # need to convert it to a matrix
 xgbtree.pred <-apply(xgbtree.prob, 1, which.max) # use the class with maximum probability as prediction
 table(xgbtree.pred, test.y) # show confusion matrix
@@ -118,11 +152,12 @@ xgbstree <- xgboost(param=param,
                     nrounds = nround, # same number of trees as before
                     max.depth = 4,    # tree depth (not the same as interaction.depth in gbm!)
                     eta = 0.5)        # shrinkage parameter
-print(xgbstree.time <- proc.time() - ptm)          # running time: .5 min on my laptop
+print(xgbstree.time <- proc.time() - ptm)         
 
 xgbstree.prob <- predict(xgbstree, testXSMatrix)   # this is a long vector
 xgbstree.prob <- t( matrix(xgbstree.prob, nrow=numberOfClasses, ncol=nrow(test.x)) ) # need to convert it to a matrix
 xgbstree.pred <-apply(xgbstree.prob, 1, which.max) # use the class with maximum probability as prediction
+
 table(xgbstree.pred, test.y) # show confusion matrix
 print(xgbstree.acc<- mean(xgbstree.pred == as.numeric(test.y)))
 

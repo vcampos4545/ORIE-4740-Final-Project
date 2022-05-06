@@ -39,35 +39,26 @@ wine.rating <- na.omit(dfRating.post)
 wine.price$NumRatings <- log(wine.price$NumRatings)
 wine.price$Price <- log(wine.price$Price)
 
-
+set.seed(1)
+train_ind <- sample(1:nrow(data), 2/3*nrow(data))
+train <- wine.price[train_ind,]
+test  <- wine.price[-train_ind,]
 
 # GAM predicting Price
 par(mfrow=c(2,5))
 
-gam1 <- gam(Price~s(Rating)+s(NumRatings)+s(Year)+s(Body)+Type+Acidity+Size+Nat+Vintage+Country,data = wine.price,select = TRUE)
+gam1 <- gam(Price~s(Rating)+s(NumRatings)+s(Year)+s(Body)+Type+Acidity+Size+Nat+Vintage+Country,data = train,select = TRUE)
 plot(gam1, se=TRUE, col="red")
 
-gam2 <- gam(Price~s(Rating)+s(NumRatings)+s(Year)+s(Body)+Type,data = wine.price,select = TRUE)
+gam2 <- gam(Price~s(Rating)+s(NumRatings)+s(Year)+s(Body)+Type,data = train,select = TRUE)
 par(mfrow=c(1,5))
-plot(gam2, se=TRUE, col="blue")
+plot(gam2, se=TRUE, col="blue",residuals = TRUE)
 
 
-
-#gam2 <- gam(Price~s(Rating)+s(NumRatings)+s(Body)+Country,data = wine.price)
-#gam3 <- gam(Price~s(Rating)+s(NumRatings)+Year+s(Body)+Country,data = wine.price)
-#gam4 <- gam(Price~s(Rating)+s(NumRatings)+poly(Year,2)+s(Body)+Country,data = wine.price)
-#anova(gam2,gam3,gam1)
-
-#gam5 <- gam(Price~s(Rating)+s(NumRatings)+s(Year,2)+s(Body)+Country,data = wine.price)
-#gam6 <- gam(Price~s(Rating)+s(NumRatings)+s(Year,5)+s(Body)+Country,data = wine.price)
-#gam7 <- gam(Price~s(Rating)+s(NumRatings)+s(Year,8)+s(Body)+Country,data = wine.price)
-#anova(gam5,gam1,gam6,gam7)
-
-# GAM predicting Rating
-
-# GAM predicting Rating
+anova(gam2,gam1)
 
 
-#gam2 <- gam(Rating~s(Price)+s(NumRatings)+Type+s(Year,4)+s(Body,4)+Acidity+Vintage+Nat+Size+Country,data = wine)
-#par(mfrow=c(2,5))
-#plot(gam2, se=TRUE, col="red")
+#gam.pred <- predict(gam1, data = test)
+
+summary(gam1)
+summary(gam2)
